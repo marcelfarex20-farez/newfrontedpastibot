@@ -53,15 +53,26 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) 
     const toggleVoice = () => {
         const newStatus = !isVoiceEnabled;
         setIsVoiceEnabled(newStatus);
-        if (!newStatus) {
+        if (!newStatus && window.speechSynthesis) {
             window.speechSynthesis.cancel();
         }
     };
 
     const startRecording = async () => {
         try {
+            console.log('Iniciando grabación...');
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
+
+            // Determinar el tipo de audio soportado
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+                ? 'audio/webm'
+                : MediaRecorder.isTypeSupported('audio/mp4')
+                    ? 'audio/mp4'
+                    : '';
+
+            const options = mimeType ? { mimeType } : {};
+            const mediaRecorder = new MediaRecorder(stream, options);
+
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
 
@@ -72,7 +83,8 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) 
             };
 
             mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const finalMimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+                const audioBlob = new Blob(audioChunksRef.current, { type: finalMimeType });
                 await handleVoiceMessage(audioBlob);
 
                 // Detener todos los tracks del stream para liberar el micrófono
@@ -83,10 +95,15 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) 
             setIsRecording(true);
 
             // Cancelar cualquier voz activa de la IA al empezar a grabar
-            window.speechSynthesis.cancel();
-        } catch (error) {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+        } catch (error: any) {
             console.error('Error al acceder al micrófono:', error);
-            alert('No se pudo acceder al micrófono. Por favor, verifica los permisos.');
+            const errorMsg = error.name === 'NotAllowedError'
+                ? 'Permiso denegado. Por favor, desinstala la app y vuelve a instalarla para que te pida el permiso de micrófono de nuevo.'
+                : `Error al acceder al micrófono: ${error.message || 'Desconocido'}`;
+            alert(errorMsg);
         }
     };
 
@@ -188,7 +205,9 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) 
     };
 
     const handleModalClose = () => {
-        window.speechSynthesis.cancel();
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
         onClose();
     };
 
