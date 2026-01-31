@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonSpinner } from '@ionic/react';
-import { close, send, volumeMedium, volumeMute, volumeHigh } from 'ionicons/icons';
-import { sendChatMessage, ChatMessage } from '../api/groqApi';
+import { close, send, volumeMedium, volumeMute, volumeHigh, mic, stopCircle } from 'ionicons/icons';
+import { sendChatMessage, ChatMessage, transcribeAudio } from '../api/groqApi';
 import './AIAssistantModal.css';
 
 interface AIAssistantModalProps {
@@ -14,8 +14,11 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) 
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+    const [isRecording, setIsRecording] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,6 +55,82 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) 
         setIsVoiceEnabled(newStatus);
         if (!newStatus) {
             window.speechSynthesis.cancel();
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                await handleVoiceMessage(audioBlob);
+
+                // Detener todos los tracks del stream para liberar el micrófono
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+
+            // Cancelar cualquier voz activa de la IA al empezar a grabar
+            window.speechSynthesis.cancel();
+        } catch (error) {
+            console.error('Error al acceder al micrófono:', error);
+            alert('No se pudo acceder al micrófono. Por favor, verifica los permisos.');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const handleVoiceMessage = async (audioBlob: Blob) => {
+        setIsLoading(true);
+        try {
+            // 1. Transcribir audio a texto
+            const transcriptionResponse = await transcribeAudio(audioBlob);
+
+            if (transcriptionResponse.success && transcriptionResponse.text) {
+                const userText = transcriptionResponse.text;
+
+                // 2. Agregar mensaje del usuario a la UI
+                const userMessage: ChatMessage = {
+                    role: 'user',
+                    content: userText,
+                };
+                setMessages((prev) => [...prev, userMessage]);
+
+                // 3. Enviar texto a la IA (reutilizamos la lógica de handleSendMessage)
+                const aiResponse = await sendChatMessage(userText, messages);
+
+                if (aiResponse.success && aiResponse.response) {
+                    const assistantMessage: ChatMessage = {
+                        role: 'assistant',
+                        content: aiResponse.response,
+                    };
+                    setMessages((prev) => [...prev, assistantMessage]);
+                    speak(aiResponse.response);
+                }
+            } else {
+                console.error('Error en transcripción:', transcriptionResponse.error);
+            }
+        } catch (error) {
+            console.error('Error procesando mensaje de voz:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -179,20 +258,35 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) 
             <div className="ai-input-container">
                 <textarea
                     className="ai-input"
-                    placeholder="Escribe tu pregunta aquí..."
+                    placeholder={isRecording ? "Escuchando..." : "Escribe tu pregunta aquí..."}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     rows={1}
-                    disabled={isLoading}
+                    disabled={isLoading || isRecording}
                 />
-                <button
-                    className="ai-send-button"
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isLoading}
-                >
-                    <IonIcon icon={send} />
-                </button>
+
+                {inputMessage.trim() ? (
+                    <button
+                        className="ai-send-button"
+                        onClick={handleSendMessage}
+                        disabled={isLoading}
+                    >
+                        <IonIcon icon={send} />
+                    </button>
+                ) : (
+                    <button
+                        className={`ai-mic-button ${isRecording ? 'recording' : ''}`}
+                        onMouseDown={startRecording}
+                        onMouseUp={stopRecording}
+                        onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
+                        onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
+                        disabled={isLoading}
+                    >
+                        <IonIcon icon={isRecording ? stopCircle : mic} />
+                        {isRecording && <div className="recording-wave"></div>}
+                    </button>
+                )}
             </div>
         </IonModal>
     );

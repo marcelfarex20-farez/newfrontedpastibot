@@ -221,6 +221,53 @@
     font-size: 18px;
 }
 
+.ai-mic-button {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    position: relative;
+    outline: none;
+}
+
+.ai-mic-button.recording {
+    background: #ff4d4d;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 77, 77, 0.4);
+}
+
+.recording-wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: rgba(255, 77, 77, 0.4);
+    animation: pulseMic 1.5s infinite;
+    z-index: -1;
+}
+
+@keyframes pulseMic {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .ai-assistant-modal {
