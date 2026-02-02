@@ -49,15 +49,41 @@ const CareHome: React.FC = () => {
   }, [user, authLoading]);
 
   const loadData = async () => {
+    const cachedData = sessionStorage.getItem("care_home_data");
+    const now = Date.now();
+
+    if (cachedData) {
+      const { data, timestamp } = JSON.parse(cachedData);
+      if (now - timestamp < 30000) { // ⚡ 30 segundos de gracia
+        setPatients(data.patients);
+        setRobotStatus(data.robotStatus);
+        setRecentLogs(data.recentLogs);
+        setLoading(false);
+        // Seguimos pidiendo en background para actualizar (Stale-while-revalidate)
+      }
+    }
+
     try {
       const [patientsRes, robotRes, logsRes] = await Promise.all([
         api.get("/patients"),
         api.get("/robot/status"),
         api.get("/robot/logs?limit=5"),
       ]);
-      setPatients(patientsRes.data);
-      setRobotStatus(robotRes.data);
-      setRecentLogs(logsRes.data);
+
+      const freshData = {
+        patients: patientsRes.data,
+        robotStatus: robotRes.data,
+        recentLogs: logsRes.data
+      };
+
+      setPatients(freshData.patients);
+      setRobotStatus(freshData.robotStatus);
+      setRecentLogs(freshData.recentLogs);
+
+      sessionStorage.setItem("care_home_data", JSON.stringify({
+        data: freshData,
+        timestamp: now
+      }));
     } catch (err) {
       console.error("Error cargando datos:", err);
     } finally {

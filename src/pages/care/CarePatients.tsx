@@ -104,17 +104,31 @@ const CarePatients: React.FC = () => {
   });
 
   const loadPatients = async () => {
-    setLoading(true);
+    const cacheKey = "care_patients_list";
+    const cached = sessionStorage.getItem(cacheKey);
+    const now = Date.now();
+
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      if (now - timestamp < 30000) { // 30 segundos
+        setPatients(data);
+        setLoading(false);
+        // Silently refresh in bg if needed
+      }
+    }
+
+    if (!cached) setLoading(true);
+
     try {
       const res = await api.get("/patients");
-      if (Array.isArray(res.data)) {
-        setPatients(res.data);
-      } else {
-        setPatients([]);
-      }
+      const freshData = Array.isArray(res.data) ? res.data : [];
+      setPatients(freshData);
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        data: freshData,
+        timestamp: now
+      }));
     } catch (err) {
       console.error("❌ Error cargando pacientes:", err);
-      // No mostramos modal de error aquí para no ser molestos en cada carga
     } finally {
       setLoading(false);
     }

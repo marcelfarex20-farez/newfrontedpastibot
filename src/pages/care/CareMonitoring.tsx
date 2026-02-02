@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
     statsChart, trendingUp, checkmarkCircle, closeCircle,
     time, calendar, person, medkit, alertCircle, arrowBack,
-    chevronForward, fitness, barChart, list, informationCircle
+    chevronForward, fitness, barChart, list, informationCircle, refresh
 } from "ionicons/icons";
 import { api } from "../../api/axios";
 import StatusModal from "../../components/StatusModal";
@@ -95,7 +95,19 @@ const CareMonitoring: React.FC = () => {
     };
 
     const loadPatientData = async (patientId: number) => {
-        setLoading(true);
+        const cacheKey = `monitoring_data_${patientId}_${selectedPeriod}`;
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+            const { stats: s, data: d, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < 60000) { // 1 minuto de cache para monitoreo
+                setStats(s);
+                setMonitoringData(d);
+                setLoading(false);
+            }
+        }
+
+        if (!cached) setLoading(true);
+
         try {
             const days = selectedPeriod === 'today' ? 1 : selectedPeriod === 'week' ? 7 : 30;
 
@@ -153,7 +165,7 @@ const CareMonitoring: React.FC = () => {
                 })
                 : undefined;
 
-            setStats({
+            const newStats: PatientStats = {
                 totalMedicines: medicines.length,
                 totalReminders: reminders.length,
                 completedToday: completed,
@@ -173,8 +185,17 @@ const CareMonitoring: React.FC = () => {
                     })
                 })),
                 medicineBreakdown
-            });
-            setMonitoringData(monitoringRes.data || []);
+            };
+
+            setStats(newStats);
+            const mData = monitoringRes.data || [];
+            setMonitoringData(mData);
+
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+                stats: newStats,
+                data: mData,
+                timestamp: Date.now()
+            }));
 
         } catch (err) {
             console.error("Error loading stats:", err);
@@ -388,12 +409,51 @@ const CareMonitoring: React.FC = () => {
 
                     {/* NUEVO: Tabla de Monitoreo Diario */}
                     <div className="pro-section-card" style={{ marginTop: '20px' }}>
-                        <h3 className="pro-card-title" style={{ color: 'var(--primary)', marginBottom: '15px' }}>
-                            <IonIcon icon={calendar} style={{ marginRight: '8px' }} />
-                            Cronograma de Hoy
+                        <h3 className="pro-card-title" style={{
+                            color: 'var(--primary)',
+                            marginBottom: '15px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <span>
+                                <IonIcon icon={calendar} style={{ marginRight: '8px' }} />
+                                Cronograma de Hoy
+                            </span>
+                            <button
+                                onClick={() => loadPatientData(selectedPatient.id)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--primary)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '5px'
+                                }}
+                            >
+                                <IonIcon icon={refresh} style={{ fontSize: '1.2rem' }} />
+                                <span style={{ fontSize: '0.7rem', marginLeft: '4px', fontWeight: 600 }}>ACTUALIZAR</span>
+                            </button>
                         </h3>
-                        <div className="pro-pill-table" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '15px' }}>
-                            <div className="pill-header" style={{ display: 'flex', fontWeight: 800, fontSize: '0.7rem', opacity: 0.5, marginBottom: '12px', padding: '0 10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        <div className="pro-pill-table" style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: '24px',
+                            padding: '20px',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                        }}>
+                            <div className="pill-header" style={{
+                                display: 'flex',
+                                fontWeight: 800,
+                                fontSize: '0.75rem',
+                                opacity: 0.4,
+                                marginBottom: '16px',
+                                padding: '0 12px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '2px'
+                            }}>
                                 <span style={{ flex: 1.2 }}>HORA</span>
                                 <span style={{ flex: 2.5 }}>MEDICINA</span>
                                 <span style={{ flex: 1, textAlign: 'right' }}>ESTADO</span>
@@ -402,31 +462,49 @@ const CareMonitoring: React.FC = () => {
                                 <div key={idx} className="pill-row" style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    padding: '12px 10px',
-                                    borderBottom: idx === monitoringData.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)',
-                                    animation: `fadeIn 0.3s ease forwards ${idx * 0.1}s`,
-                                    opacity: 0
+                                    padding: '16px 12px',
+                                    marginBottom: '8px',
+                                    borderRadius: '16px',
+                                    background: 'rgba(255, 255, 255, 0.02)',
+                                    borderBottom: 'none',
+                                    transition: 'all 0.3s ease',
+                                    animation: `fadeInUp 0.5s ease forwards ${idx * 0.12}s`,
+                                    opacity: 0,
+                                    transform: 'translateY(10px)'
                                 }}>
-                                    <div style={{ flex: 1.2, fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>{item.time}</div>
+                                    <div style={{
+                                        flex: 1.2,
+                                        fontWeight: 900,
+                                        color: 'var(--primary)',
+                                        fontSize: '1.2rem',
+                                        fontFamily: 'Outfit, sans-serif'
+                                    }}>{item.time}</div>
                                     <div style={{ flex: 2.5 }}>
-                                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.medicineName}</div>
-                                        <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{item.dosage}</div>
+                                        <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff' }}>{item.medicineName}</div>
+                                        <div style={{ fontSize: '0.8rem', opacity: 0.5, fontWeight: 500 }}>{item.dosage}</div>
                                     </div>
                                     <div style={{ flex: 1, textAlign: 'right' }}>
                                         {item.status === 'COMPLETED' ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                <IonIcon icon={checkmarkCircle} style={{ color: 'var(--success)', fontSize: '1.6rem' }} />
-                                                <span style={{ fontSize: '0.6rem', color: 'var(--success)', fontWeight: 700 }}>ENTREGADA</span>
+                                                <IonIcon icon={checkmarkCircle} style={{ color: '#4ade80', fontSize: '1.8rem', filter: 'drop-shadow(0 0 8px rgba(74, 222, 128, 0.3))' }} />
+                                                <span style={{ fontSize: '0.6rem', color: '#4ade80', fontWeight: 800, marginTop: '2px' }}>ENTREGADA</span>
                                             </div>
                                         ) : item.status === 'OMITTED' ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                <IonIcon icon={closeCircle} style={{ color: 'var(--danger)', fontSize: '1.6rem' }} />
-                                                <span style={{ fontSize: '0.6rem', color: 'var(--danger)', fontWeight: 700 }}>OMITIDA</span>
+                                                <IonIcon icon={closeCircle} style={{ color: '#f87171', fontSize: '1.8rem', filter: 'drop-shadow(0 0 8px rgba(248, 113, 113, 0.3))' }} />
+                                                <span style={{ fontSize: '0.6rem', color: '#f87171', fontWeight: 800, marginTop: '2px' }}>OMITIDA</span>
+                                            </div>
+                                        ) : item.status === 'PROCESSING' ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                <div className="processing-indicator">
+                                                    <IonIcon icon={fitness} style={{ color: '#fb923c', fontSize: '1.8rem', filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.3))' }} />
+                                                </div>
+                                                <span style={{ fontSize: '0.6rem', color: '#fb923c', fontWeight: 800, marginTop: '2px' }}>ESPERANDO MANO</span>
                                             </div>
                                         ) : (
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                <IonIcon icon={time} style={{ color: 'var(--warning)', fontSize: '1.6rem' }} />
-                                                <span style={{ fontSize: '0.6rem', color: 'var(--warning)', fontWeight: 700 }}>PENDIENTE</span>
+                                                <IonIcon icon={time} style={{ color: '#fbbf24', fontSize: '1.8rem', filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.3))' }} />
+                                                <span style={{ fontSize: '0.6rem', color: '#fbbf24', fontWeight: 800, marginTop: '2px' }}>PENDIENTE</span>
                                             </div>
                                         )}
                                     </div>

@@ -120,13 +120,9 @@ const CareControl: React.FC = () => {
 
       setRobotStatus(enhancedStatus);
 
-      // Load medicines for each patient
-      const patientsWithMeds = await Promise.all(
-        patientsRes.data.map(async (p: any) => {
-          const medsRes = await api.get(`/patients/${p.id}/medicines`);
-          return { ...p, medicines: medsRes.data };
-        })
-      );
+      // ⚡ OPTIMIZACIÓN: Los pacientes ya traen sus medicinas en la respuesta del backend (findAllForCaregiver)
+      // No necesitamos pedirlas una por una en un bucle async.
+      const patientsWithMeds = patientsRes.data;
       setPatients(patientsWithMeds);
 
       if (patientsWithMeds.length > 0 && !selectedPatient) {
