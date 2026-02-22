@@ -80,10 +80,25 @@ body[data-theme="dark"] {
   overflow: hidden;
 }
 
-.care-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(2, 136, 209, 0.08);
-  border-color: rgba(2, 136, 209, 0.1);
+.sharing-card-container {
+  perspective: 1000px;
+}
+
+.sharing-code-card.qr-active {
+  min-height: 280px !important;
+}
+
+.sharing-segment {
+  --background: rgba(2, 136, 209, 0.05);
+  --indicator-color: white;
+  --indicator-box-shadow: 0 4px 12px rgba(2, 136, 209, 0.2);
+  border-radius: 16px;
+}
+
+.sharing-segment ion-segment-button {
+  --color-checked: var(--primary);
+  --indicator-background: white;
+  min-height: 40px;
 }
 
 .med-card-header {

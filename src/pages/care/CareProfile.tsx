@@ -14,6 +14,7 @@ import {
 } from "ionicons/icons";
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import PhotoUploadModal from "../../components/PhotoUploadModal";
+import CustomCameraModal from "../../components/CustomCameraModal";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../api/axios";
 import StatusModal from "../../components/StatusModal";
@@ -33,6 +34,7 @@ const CareProfile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
 
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // Status Modal State
@@ -66,31 +68,39 @@ const CareProfile: React.FC = () => {
 
   const handleSourceSelect = async (source: 'camera' | 'gallery') => {
     setIsPhotoModalOpen(false);
+    if (source === 'camera') {
+      setIsCameraModalOpen(true);
+      return;
+    }
+
     try {
       const image = await Camera.getPhoto({
         quality: 90,
         allowEditing: true,
         resultType: CameraResultType.Base64,
-        source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos
+        source: CameraSource.Photos
       });
 
       if (image.base64String) {
-        setUploading(true);
-        const base64 = `data:image/${image.format};base64,${image.base64String}`;
-        try {
-          await api.patch("/users/profile", { photoUrl: base64 });
-          setPhoto(base64);
-          if (getProfile) getProfile();
-          showStatus('success', '¡Genial!', 'Tu foto de perfil ha sido actualizada.');
-        } catch (err) {
-          console.error("Error subiendo foto:", err);
-          showStatus('error', 'Error', 'No se pudo subir la foto.');
-        } finally {
-          setUploading(false);
-        }
+        handleImageUpload(`data:image/${image.format};base64,${image.base64String}`);
       }
     } catch (err) {
-      console.error("Error with Camera:", err);
+      console.error("Error with Gallery:", err);
+    }
+  };
+
+  const handleImageUpload = async (base64: string) => {
+    setUploading(true);
+    try {
+      await api.patch("/users/profile", { photoUrl: base64 });
+      setPhoto(base64);
+      if (getProfile) getProfile();
+      showStatus('success', '¡Genial!', 'Tu foto de perfil ha sido actualizada.');
+    } catch (err) {
+      console.error("Error subiendo foto:", err);
+      showStatus('error', 'Error', 'No se pudo subir la foto.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -336,6 +346,12 @@ const CareProfile: React.FC = () => {
           isOpen={isPhotoModalOpen}
           onClose={() => setIsPhotoModalOpen(false)}
           onSelect={handleSourceSelect}
+        />
+
+        <CustomCameraModal
+          isOpen={isCameraModalOpen}
+          onClose={() => setIsCameraModalOpen(false)}
+          onCapture={handleImageUpload}
         />
 
         <ConfirmationModal

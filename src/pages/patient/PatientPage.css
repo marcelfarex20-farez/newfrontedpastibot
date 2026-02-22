@@ -20,6 +20,18 @@ body[data-theme="dark"] {
   --glass-border: rgba(255, 255, 255, 0.05);
 }
 
+/* QR SCANNER ADAPTATION */
+body.barcode-scanner-active {
+  --background: transparent !important;
+  background: transparent !important;
+}
+
+body.barcode-scanner-active .patient-page,
+body.barcode-scanner-active .patient-container,
+body.barcode-scanner-active .patient-bubble {
+  visibility: hidden;
+}
+
 .patient-page {
   min-height: 100vh;
   position: relative;

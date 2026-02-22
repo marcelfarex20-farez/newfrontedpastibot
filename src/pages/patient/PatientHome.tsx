@@ -17,8 +17,12 @@ import {
   bed,
   walk,
   heart,
-  pulse
+  pulse,
+  qrCodeOutline,
+  cameraOutline
 } from "ionicons/icons";
+import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { Capacitor } from "@capacitor/core";
 import { useHistory } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../api/axios";
@@ -142,6 +146,55 @@ const PatientHome: React.FC = () => {
 
   const [linkCode, setLinkCode] = useState("");
   const [linking, setLinking] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const startScan = async () => {
+    if (!Capacitor.isNativePlatform()) {
+      alert("El escáner QR solo está disponible en la aplicación móvil real (Android/iOS).");
+      return;
+    }
+
+    try {
+      // 1. Verificar/Pedir permisos
+      const status = await BarcodeScanner.checkPermissions();
+      if (status.camera !== 'granted') {
+        const req = await BarcodeScanner.requestPermissions();
+        if (req.camera !== 'granted') {
+          alert("Necesitamos permiso de la cámara para escanear el código QR.");
+          return;
+        }
+      }
+
+      // 2. Ejecutar escaneo (usa la interfaz nativa del sistema)
+      setIsScanning(true);
+      const { barcodes } = await BarcodeScanner.scan();
+
+      if (barcodes.length > 0 && barcodes[0].displayValue) {
+        const code = barcodes[0].displayValue;
+        setLinkCode(code);
+        await handleLinkDirect(code);
+      }
+    } catch (err) {
+      console.error("Error escaneando:", err);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+
+  const handleLinkDirect = async (code: string) => {
+    if (!code.trim()) return;
+    setLinking(true);
+    try {
+      await api.post("/patients/link", { code });
+      alert("¡Cuenta vinculada con éxito! Ahora puedes ver tus medicinas.");
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Error al vincular. Verifica el código.");
+    } finally {
+      setLinking(false);
+    }
+  };
 
   const handleLink = async () => {
     if (!linkCode.trim()) return;
@@ -224,17 +277,42 @@ const PatientHome: React.FC = () => {
               </div>
 
               <button
-                className={`dispense - btn ${linking ? "loading" : ""} `}
+                className={`dispense-btn ${linking ? "loading" : ""} `}
                 onClick={handleLink}
                 disabled={linking || linkCode.length < 1}
                 style={{
                   width: '100%',
-                  margin: 0,
+                  margin: '0 0 15px 0',
                   background: linkCode.length >= 1 ? 'var(--primary-gradient)' : '#cbd5e0',
                   boxShadow: linkCode.length >= 1 ? '0 10px 25px rgba(2, 136, 209, 0.3)' : 'none'
                 }}
               >
-                {linking ? "Vinculando..." : "CONECTAR AHORA"}
+                {linking ? "Vinculando..." : "CONECTAR CON CÓDIGO"}
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
+                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }}></div>
+                <span style={{ padding: '0 15px', color: '#94a3b8', fontSize: '0.8rem', fontWeight: 700 }}>O TAMBIÉN</span>
+                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }}></div>
+              </div>
+
+              <button
+                className="dispense-btn"
+                onClick={startScan}
+                style={{
+                  width: '100%',
+                  margin: 0,
+                  background: 'white',
+                  color: 'var(--primary)',
+                  border: '2px solid var(--primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}
+              >
+                <IonIcon icon={qrCodeOutline} />
+                ESCANEAR CÓDIGO QR
               </button>
 
               <p style={{ marginTop: '25px', fontSize: '0.8rem', color: '#94a3b8' }}>

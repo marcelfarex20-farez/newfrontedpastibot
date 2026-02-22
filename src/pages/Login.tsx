@@ -90,8 +90,8 @@ const Login: React.FC = () => {
 
           <IonInput
             className="input"
-            type="email"
-            placeholder="Correo electrónico"
+            type="text"
+            placeholder="Correo o Usuario"
             value={email}
             onIonChange={(e) => setEmail(e.detail.value || "")}
           />

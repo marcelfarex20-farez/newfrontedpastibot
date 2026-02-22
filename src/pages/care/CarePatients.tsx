@@ -14,8 +14,11 @@ import {
   IonTextarea,
   IonSelect,
   IonSelectOption,
-  IonAlert
+  IonAlert,
+  IonSegment,
+  IonSegmentButton
 } from "@ionic/react";
+import { QRCodeSVG } from 'qrcode.react';
 import { useHistory } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../api/axios";
@@ -70,6 +73,7 @@ const CarePatients: React.FC = () => {
   const [editRobotSerial, setEditRobotSerial] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [sharingMode, setSharingMode] = useState<'code' | 'qr'>('code');
 
   // Fallback useEffect al montar
   useEffect(() => {
@@ -235,23 +239,75 @@ const CarePatients: React.FC = () => {
             </div>
           </header>
 
-          {/* TARJETA DE CÓDIGO MAESTRO */}
-          <div className="sharing-code-card" style={{
-            background: 'var(--primary-gradient)',
-            borderRadius: '28px',
-            padding: '25px 20px',
-            marginBottom: '40px',
-            color: 'white',
-            textAlign: 'center',
-            boxShadow: '0 15px 35px rgba(2, 136, 209, 0.25)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
-            <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem', opacity: 0.9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Mi Código Profesional</p>
-            <h2 style={{ fontSize: '3rem', margin: 0, fontWeight: 900, letterSpacing: '10px', textShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>{user?.sharingCode || '------'}</h2>
-            <div style={{ margin: '15px auto 10px', height: '1px', background: 'rgba(255,255,255,0.2)', width: '60%' }}></div>
-            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8, lineHeight: '1.4' }}>Dile a tus pacientes que ingresen este código<br />para vincularse a tu cuenta.</p>
+
+          {/* TARJETA DE CÓDIGO MAESTRO CON DUAL MODE */}
+          <div className="sharing-card-container" style={{ marginBottom: '40px' }}>
+            <IonSegment
+              value={sharingMode}
+              onIonChange={(e) => setSharingMode(e.detail.value as any)}
+              mode="ios"
+              className="sharing-segment"
+              style={{
+                marginBottom: '15px',
+                '--background': 'rgba(2, 136, 209, 0.08)',
+                borderRadius: '16px',
+                padding: '4px'
+              }}
+            >
+              <IonSegmentButton value="code">
+                <IonLabel style={{ fontWeight: 700 }}>Código Texto</IonLabel>
+              </IonSegmentButton>
+              <IonSegmentButton value="qr">
+                <IonLabel style={{ fontWeight: 700 }}>Código QR</IonLabel>
+              </IonSegmentButton>
+            </IonSegment>
+
+            <div className={`sharing-code-card ${sharingMode === 'qr' ? 'qr-active' : ''}`} style={{
+              background: 'var(--primary-gradient)',
+              borderRadius: '28px',
+              padding: '25px 20px',
+              color: 'white',
+              textAlign: 'center',
+              boxShadow: '0 15px 35px rgba(2, 136, 209, 0.25)',
+              position: 'relative',
+              overflow: 'hidden',
+              minHeight: '220px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+              <div style={{ position: 'absolute', bottom: '-30px', left: '-30px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+
+              {sharingMode === 'code' ? (
+                <div className="fade-in" style={{ width: '100%' }}>
+                  <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem', opacity: 0.9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Mi Código Profesional</p>
+                  <h2 style={{ fontSize: '3rem', margin: 0, fontWeight: 900, letterSpacing: '10px', textShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>{user?.sharingCode || '------'}</h2>
+                  <div style={{ margin: '15px auto 10px', height: '1px', background: 'rgba(255,255,255,0.2)', width: '60%' }}></div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8, lineHeight: '1.4' }}>Dile a tus pacientes que ingresen este código<br />para vincularse a tu cuenta.</p>
+                </div>
+              ) : (
+                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{
+                    background: 'white',
+                    padding: '15px',
+                    borderRadius: '20px',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    marginBottom: '15px'
+                  }}>
+                    <QRCodeSVG
+                      value={user?.sharingCode || ''}
+                      size={140}
+                      level="H"
+                      includeMargin={false}
+                    />
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9, fontWeight: 700 }}>Escanea para conectar al instante</p>
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>

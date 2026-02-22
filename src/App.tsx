@@ -127,13 +127,9 @@ const App: React.FC = () => {
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth(); // Necesitamos importar useAuth
 
-  if (loading) return null; // O un spinner
+  if (loading) return null;
 
-  if (user) {
-    return <Redirect to={user.role === 'PACIENTE' ? '/patient/home' : '/care/home'} />;
-  }
-
-  return <Redirect to="/login" />;
+  return <Redirect to="/splash" />;
 };
 
 export default App;

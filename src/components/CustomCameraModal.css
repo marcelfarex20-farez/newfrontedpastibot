@@ -1,0 +1,255 @@
+.camera-modal {
+    --background: #0f172a;
+    --height: 90%;
+    --border-radius: 32px;
+}
+
+.camera-modal-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 30px 20px;
+    color: white;
+    position: relative;
+    background: #0f172a;
+}
+
+.camera-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+}
+
+.header-text-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.camera-modal-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0 0 5px 0;
+}
+
+.camera-modal-subtitle {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin: 0;
+    font-family: 'Outfit', serif;
+}
+
+.camera-modal-subtitle span {
+    font-style: italic;
+    font-weight: 300;
+    color: #fbbf24;
+}
+
+.close-modal-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(90deg);
+}
+
+.camera-view-container {
+    flex: 1;
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #1e293b;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    /* Espejo por defecto */
+}
+
+.preview-video.back-camera {
+    transform: scaleX(1);
+}
+
+.camera-frame-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.focus-corner {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 2px solid rgba(251, 191, 36, 0.5);
+}
+
+.top-left {
+    top: 20px;
+    left: 20px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 20px;
+    right: 20px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 20px;
+    left: 20px;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 20px;
+    right: 20px;
+    border-left: none;
+    border-top: none;
+}
+
+.no-access-msg {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.no-access-msg ion-icon {
+    font-size: 4rem;
+    color: #ef4444;
+}
+
+.camera-controls-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    padding: 30px 0;
+}
+
+.flip-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.flip-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(180deg);
+}
+
+.shutter-btn-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    padding: 5px;
+    border: 4px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.shutter-btn-wrapper:active {
+    transform: scale(0.9);
+}
+
+.shutter-inner {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.captured-preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #0f172a;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.captured-img {
+    flex: 1;
+    width: 100%;
+    border-radius: 20px;
+    object-fit: contain;
+    background: #000;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 15px;
+    padding-top: 20px;
+}
+
+.confirm-actions button {
+    flex: 1;
+    padding: 16px;
+    border-radius: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.retake-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.use-photo-btn {
+    background: #fbbf24;
+    color: #000;
+}
